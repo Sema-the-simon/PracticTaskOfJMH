@@ -11,9 +11,7 @@ import kotlin.random.Random
 @State(Scope.Benchmark)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
-@Fork(value = 1, jvmArgs = ["-Xms2G", "-Xmx2G"])
-@Warmup(iterations = 5)
-@Measurement(iterations = 10)
+@Fork(1)
 
 open class TestRemoveMethod {
 
@@ -22,33 +20,40 @@ open class TestRemoveMethod {
     private val binarySearchTreeSet = KtBinarySearchTree<Int>()
     private var removedElement = 0
 
-    @Param("10", "14", "17", "20", "23")
-    private var pow: Int = 5
+    @Param("2", "4", "6", "8", "10", "14", "18", "22", "24")
+    private var pow: Int = 0
 
-    private val max = (2.0.pow(pow)).toInt()
+    private var max = 0
 
     @Benchmark
+    @Warmup(iterations = 5, time = 1)
+    @Measurement(iterations = 7, time = 1)
+    fun binarySearchTreeSetTest(bh: Blackhole) {
+        val result = binarySearchTreeSet.remove(removedElement)
+        bh.consume(result)
+    }
+
+    @Benchmark
+    @Warmup(iterations = 3, time = 1)
+    @Measurement(iterations = 7, time = 1)
     fun treeSetTest(bh: Blackhole) {
         val result = treeSet.remove(removedElement)
         bh.consume(result)
     }
 
     @Benchmark
+    @Warmup(iterations = 3, time = 1)
+    @Measurement(iterations = 4, time = 1)
     fun hashSetTest(bh: Blackhole) {
         val result = hashSet.remove(removedElement)
         bh.consume(result)
     }
 
-    @Benchmark
-    fun binarySearchTreeSetTest(bh: Blackhole) {
-        val result = binarySearchTreeSet.remove(removedElement)
-        bh.consume(result)
-    }
 
     /**
+     *
     // упорядоченные данные
-    // данные подаются так что дерево заполняется равномерно
-    fun setupSets() {
+    // равномерно заполненное дерево
     removedElement = Random.nextInt(1, max)
     var current = max / 2
     binarySearchTreeSet.add(current)
@@ -67,12 +72,56 @@ open class TestRemoveMethod {
     current /= 2
     nodeNumber *= 2
     }
+
+
+    // упорядоченные данные
+    // все элементы в правом поддереве
+    val random = Random
+    removedElement = random.nextInt(1, max)
+    binarySearchTreeSet.add(removedElement)
+    treeSet.add(removedElement)
+    hashSet.add(removedElement)
+
+    for (i in 1..max){
+    binarySearchTreeSet.add(i)
+    treeSet.add(i)
+    hashSet.add(i)
     }
+
+    // упорядоченные данные
+    // все элементы в левом поддереве
+    val random = Random
+    removedElement = random.nextInt(1, max)
+    binarySearchTreeSet.add(removedElement)
+    treeSet.add(removedElement)
+    hashSet.add(removedElement)
+
+    for (i in max.downTo(1)){
+    binarySearchTreeSet.add(i)
+    treeSet.add(i)
+    hashSet.add(i)
+    }
+
+    // случайные данные
+    val random = Random
+    removedElement = random.nextInt(1, max)
+    binarySearchTreeSet.add(removedElement)
+    treeSet.add(removedElement)
+    hashSet.add(removedElement)
+
+    for (i in 1..max){
+    val newElement = random.nextInt(1, max)
+    binarySearchTreeSet.add(newElement)
+    treeSet.add(newElement)
+    hashSet.add(newElement)
+    }
+
      */
 
     @Setup
-    // случайные данные
-    fun randomSetupSets() {
+    fun setupData() {
+        // случайные данные
+        max = (2.0.pow(pow)).toInt()
         val random = Random
         removedElement = random.nextInt(1, max)
         binarySearchTreeSet.add(removedElement)
@@ -85,5 +134,12 @@ open class TestRemoveMethod {
             treeSet.add(newElement)
             hashSet.add(newElement)
         }
+    }
+
+    @TearDown
+    fun clearData() {
+        treeSet.clear()
+        hashSet.clear()
+        binarySearchTreeSet.clear()
     }
 }
